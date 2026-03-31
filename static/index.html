@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>modely.ai</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--purple:#8b5cf6;--blue:#3b82f6;--green:#22c55e;--red:#ef4444;--text:#e6edf3;--muted:#8b949e}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:999}
+.overlay.hidden{display:none}
+.auth-box{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:36px;width:390px;max-width:92vw}
+.logo{font-size:30px;font-weight:800;text-align:center;margin-bottom:4px}
+.logo em{color:var(--purple);font-style:normal}
+.sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:18px}
+.gift{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:8px;padding:10px;font-size:13px;color:#86efac;text-align:center;margin-bottom:16px}
+.atabs{display:flex;background:#0d1117;border-radius:10px;padding:4px;gap:4px;margin-bottom:18px}
+.atab{flex:1;padding:8px;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:13px;font-weight:500;transition:all .2s}
+.atab.active{background:var(--purple);color:#fff}
+.fg{margin-bottom:13px}
+.lb{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:500}
+.inp{width:100%;background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;outline:none;transition:border .2s}
+.inp:focus{border-color:var(--purple)}
+.abtn{width:100%;padding:13px;background:linear-gradient(135deg,var(--purple),var(--blue));color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:600;cursor:pointer;transition:opacity .2s}
+.abtn:hover{opacity:.9}.abtn:disabled{opacity:.4;cursor:not-allowed}
+.aerr{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px;font-size:13px;color:#fca5a5;margin-top:11px;display:none}
+.aerr.show{display:block}
+.header{background:linear-gradient(135deg,#1a0533,#0d1117);padding:16px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.hl{display:flex;align-items:center;gap:12px}
+.hl h1{font-size:21px;font-weight:700}
+.hl h1 em{color:var(--purple);font-style:normal}
+.hl p{font-size:12px;color:var(--muted);margin-top:1px}
+.hr{display:flex;align-items:center;gap:12px}
+.cred{background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);border-radius:20px;padding:5px 14px;font-size:13px;font-weight:600}
+.cred span{color:var(--purple)}.uemail{font-size:12px;color:var(--muted)}
+.lout{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 11px;border-radius:7px;font-size:12px;cursor:pointer;transition:all .2s}
+.lout:hover{border-color:var(--red);color:var(--red)}
+.layout{display:grid;grid-template-columns:400px 1fr;gap:22px;padding:22px;max-width:1200px;margin:0 auto}
+@media(max-width:860px){.layout{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px}
+.card h2{font-size:12px;font-weight:600;margin-bottom:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.tabs{display:flex;gap:5px;margin-bottom:14px}
+.tab{padding:6px 13px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:13px;transition:all .2s}
+.tab.active{background:var(--purple);border-color:var(--purple);color:#fff}
+.fgg{margin-bottom:13px}
+.fl{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:500}
+textarea,input[type=text],input[type=number],select{width:100%;background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font-size:13px;outline:none;transition:border .2s;font-family:inherit}
+textarea{resize:vertical;min-height:88px}
+textarea:focus,input:focus,select:focus{border-color:var(--purple)}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.btn{width:100%;padding:12px;border-radius:9px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;margin-top:7px;display:block}
+.bp{background:linear-gradient(135deg,var(--purple),var(--blue));color:#fff}
+.bp:hover{opacity:.9;transform:translateY(-1px)}
+.bp:disabled{opacity:.45;cursor:not-allowed;transform:none}
+input[type=file]{display:none}
+.bupl{width:100%;padding:9px;border-radius:7px;border:2px dashed var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:13px;transition:all .2s;display:block;text-align:center}
+.bupl:hover{border-color:var(--purple);color:var(--purple)}
+.upst{font-size:12px;margin-top:4px;min-height:15px}
+.steps{display:flex;flex-direction:column;gap:7px}
+.step{display:flex;align-items:center;gap:11px;padding:12px;border-radius:10px;border:1px solid var(--border);transition:all .3s}
+.step.active{border-color:var(--blue);background:rgba(59,130,246,.08)}
+.step.done{border-color:var(--green);background:rgba(34,197,94,.07)}
+.step.error{border-color:var(--red);background:rgba(239,68,68,.07)}
+.sico{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;background:var(--border)}
+.step.active .sico{background:var(--blue);animation:pulse 1.5s infinite}
+.step.done .sico{background:var(--green)}
+.step.error .sico{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.sinfo{flex:1}.sname{font-size:13px;font-weight:500}.ssub{font-size:11px;color:var(--muted);margin-top:1px}
+.rcard{margin-top:22px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;display:none}
+.rcard.show{display:block}
+.scring{text-align:center;margin-bottom:18px}
+.scnum{font-size:60px;font-weight:800;line-height:1}
+.sclb{font-size:12px;color:var(--muted);margin-top:3px}
+.scverd{font-size:15px;font-weight:600;margin-top:5px}
+.recs{margin-top:18px}
+.rectit{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:9px}
+.ri{display:flex;gap:9px;padding:9px 11px;border-radius:8px;margin-bottom:6px;font-size:13px;align-items:flex-start}
+.ri.good{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2)}
+.ri.warn{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2)}
+.ri.bad{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2)}
+.rico{font-size:15px;flex-shrink:0;margin-top:1px}
+.dims{background:#0d1117;border-radius:8px;padding:13px;margin-top:13px;font-size:13px}
+.dr{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)}
+.dr:last-child{border-bottom:none}
+.dlb{color:var(--muted)}
+.dlbtn{display:block;width:100%;padding:11px;background:var(--green);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;text-align:center;margin-top:13px;transition:opacity .2s}
+.dlbtn:hover{opacity:.85}
+.apbox{background:rgba(139,92,246,.08);border:1px solid #4c2d8f;border-radius:12px;padding:14px;margin-top:14px;display:none}
+.apbox.show{display:block}
+.apimg{width:100%;border-radius:8px;margin-bottom:11px;max-height:260px;object-fit:contain;background:#0d1117}
+.apbtns{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.apbtn{background:var(--green);color:#fff;padding:9px;border-radius:8px;border:none;cursor:pointer;font-weight:600;font-size:13px}
+.rgbtn{background:var(--border);color:var(--text);padding:9px;border-radius:8px;border:none;cursor:pointer;font-weight:600;font-size:13px}
+.nobanner{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:13px 15px;margin-top:11px;font-size:13px;display:none}
+.nobanner.show{display:flex;gap:9px;align-items:center}
+</style>
+</head>
+<body>
+<div class="overlay" id="ov">
+  <div class="auth-box">
+    <div class="logo">modely<em>.ai</em></div>
+    <div class="sub">AI-powered 3D model generator for 3D printing</div>
+    <div class="gift">&#127873; 3 free generations on sign up</div>
+    <div class="atabs">
+      <button class="atab active" onclick="setAt(0)">Create Account</button>
+      <button class="atab" onclick="setAt(1)">Sign In</button>
+    </div>
+    <div class="fg"><label class="lb">Email</label>
+      <input type="text" class="inp" id="ae" placeholder="you@example.com" autocomplete="email"></div>
+    <div class="fg"><label class="lb">Password</label>
+      <input type="password" class="inp" id="ap" placeholder="Min 6 characters" onkeydown="if(event.key===String.fromCharCode(13))doAuth()"></div>
+    <button class="abtn" id="asub" onclick="doAuth()">Create Account</button>
+    <div class="aerr" id="aerr"></div>
+  </div>
+</div>
+<div class="header">
+  <div class="hl">
+    <span style="font-size:26px">&#x1F409;</span>
+    <div><h1>modely<em>.ai</em></h1><p>AI 3D model generator for 3D printing</p></div>
+  </div>
+  <div class="hr">
+    <div class="cred">Credits: <span id="cc">-</span></div>
+    <div class="uemail" id="ue"></div>
+    <button class="lout" onclick="logout()">Sign Out</button>
+  </div>
+</div>
+<div class="layout">
+  <div class="card">
+    <h2>&#x1F3A8; Input</h2>
+    <div class="tabs">
+      <button class="tab active" onclick="setTab(0)">&#x270D;&#xFE0F; Prompt</button>
+      <button class="tab" onclick="setTab(1)">&#x1F310; URL</button>
+      <button class="tab" onclick="setTab(2)">&#x1F4F7; Photo</button>
+    </div>
+    <div id="tp">
+      <div class="fgg"><span class="fl">Describe your object</span>
+        <textarea id="prompt" placeholder="A cute cartoon dragon, white background, centered, no shadows..."></textarea></div>
+    </div>
+    <div id="tu" style="display:none">
+      <div class="fgg"><span class="fl">Image URL</span>
+        <input type="text" id="iurl" placeholder="https://example.com/photo.jpg"></div>
+    </div>
+    <div id="tf" style="display:none">
+      <div class="fgg"><span class="fl">Upload Photo</span>
+        <input type="file" id="fp" accept=".jpg,.jpeg,.png,.webp,.heic" onchange="pickPhoto(this)">
+        <label for="fp" class="bupl">&#x1F4C2; Browse Photo...</label>
+        <div class="upst" id="fps"></div></div>
+    </div>
+    <div class="r2">
+      <div class="fgg"><span class="fl">Material</span>
+        <select id="mat">
+          <option value="PLA">PLA (recommended)</option>
+          <option value="PETG">PETG</option>
+          <option value="ABS">ABS</option>
+          <option value="TPU">TPU (flexible)</option>
+          <option value="Resin">Resin</option>
+        </select></div>
+      <div class="fgg"><span class="fl">Target height (mm)</span>
+        <input type="number" id="ht" value="80" min="10" max="300"></div>
+    </div>
+    <button class="btn bp" id="gb" onclick="startGen()">&#x1F680; Generate 3D Model</button>
+    <div class="nobanner" id="nob">
+      <span style="font-size:20px">&#x1FA99;</span>
+      <div><strong>No credits left</strong><br><span style="color:var(--muted)">Purchase credits to continue</span></div>
+    </div>
+    <div class="apbox" id="apb">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:9px">&#x1F441;&#xFE0F; Preview:</p>
+      <img class="apimg" id="apimg" src="" alt="">
+      <div class="apbtns" style="margin-top:9px">
+        <button class="apbtn" onclick="approveImg()">&#x2705; Looks good</button>
+        <button class="rgbtn" onclick="regenImg()">&#x1F504; Regenerate</button>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>&#x26A1; Pipeline</h2>
+      <div class="steps" id="steps">
+        <div style="color:var(--muted);font-size:13px;padding:8px 0">Enter a prompt and click Generate to start</div>
+      </div>
+    </div>
+    <div class="rcard" id="rc"><div id="rcontent"></div></div>
+  </div>
+</div>
+<script>
+var tok=localStorage.getItem("mt"),ati=0,tab=0,apUrl=null,pp=null,lstl=null;
+function ah(){return{"Content-Type":"application/json","Authorization":"Bearer "+tok};}
+function setAt(i){ati=i;document.querySelectorAll(".atab").forEach(function(b,j){b.classList.toggle("active",j===i);});
+  document.getElementById("asub").textContent=i===0?"Create Account":"Sign In";
+  document.getElementById("aerr").classList.remove("show");}
+async function doAuth(){
+  var e=document.getElementById("ae").value.trim(),p=document.getElementById("ap").value;
+  var btn=document.getElementById("asub");
+  if(!e||!p){showAErr("Fill in all fields");return;}
+  btn.disabled=true;btn.textContent="Please wait...";
+  try{
+    var r=await fetch(ati===0?"/api/auth/register":"/api/auth/login",{method:"POST",
+      headers:{"Content-Type":"application/json"},body:JSON.stringify({email:e,password:p})});
+    var d=await r.json();
+    if(!r.ok||d.error){showAErr(d.error||"Something went wrong");btn.disabled=false;
+      btn.textContent=ati===0?"Create Account":"Sign In";return;}
+    tok=d.token;localStorage.setItem("mt",tok);
+    document.getElementById("ov").classList.add("hidden");setUI(d.email,d.credits);
+  }catch(ex){showAErr("Network error");btn.disabled=false;btn.textContent=ati===0?"Create Account":"Sign In";}
+}
+function showAErr(m){var el=document.getElementById("aerr");el.textContent=m;el.classList.add("show");}
+function setUI(em,cr){document.getElementById("ue").textContent=em;document.getElementById("cc").textContent=cr;}
+function logout(){localStorage.removeItem("mt");tok=null;document.getElementById("ov").classList.remove("hidden");}
+async function checkAuth(){
+  if(!tok){document.getElementById("ov").classList.remove("hidden");return;}
+  try{var r=await fetch("/api/auth/me",{headers:ah()});
+    if(!r.ok){document.getElementById("ov").classList.remove("hidden");return;}
+    var d=await r.json();document.getElementById("ov").classList.add("hidden");setUI(d.email,d.credits);
+  }catch(e){document.getElementById("ov").classList.remove("hidden");}
+}
+function setTab(i){tab=i;["tp","tu","tf"].forEach(function(x,j){document.getElementById(x).style.display=j===i?"block":"none";});
+  document.querySelectorAll(".tab").forEach(function(b,j){b.classList.toggle("active",j===i);});}
+async function pickPhoto(inp){
+  var f=inp.files[0];if(!f)return;
+  document.getElementById("fps").innerHTML="<span style='color:var(--muted)'>Uploading...</span>";
+  try{var fd=new FormData();fd.append("file",f);
+    var r=await fetch("/api/upload",{method:"POST",headers:{Authorization:"Bearer "+tok},body:fd});
+    var d=await r.json();if(d.error)throw new Error(d.error);
+    window._up=d.saved_path;
+    document.getElementById("fps").innerHTML="<span style='color:var(--green)'>OK: "+f.name+"</span>";
+  }catch(e){document.getElementById("fps").innerHTML="<span style='color:var(--red)'>Error: "+e.message+"</span>";}
+}
+var SP=[{id:"img",n:"Generate Image",s:"Nano Banana 2",ic:"&#x1F3A8;"},
+  {id:"dn",n:"Denoise",s:"Background removal",ic:"&#x2728;"},
+  {id:"md",n:"Generate 3D",s:"Hunyuan3D ~10 min",ic:"&#x1F9CA;"},
+  {id:"cv",n:"GLB to STL",s:"Format conversion",ic:"&#x1F504;"},
+  {id:"sc",n:"Scale Model",s:"Resize to target",ic:"&#x1F4D0;"},
+  {id:"an",n:"Analyze Mesh",s:"Geometry check",ic:"&#x1F50D;"},
+  {id:"pr",n:"Print Analysis",s:"FDM suitability",ic:"&#x1F5A8;"}];
+var SU=SP.slice(1);
+function rSteps(ss){document.getElementById("steps").innerHTML=ss.map(function(s){
+  return "<div class='step' id='s-"+s.id+"'><div class='sico'>&#x23F3;</div><div class='sinfo'><div class='sname'>"+s.ic+" "+s.n+"</div><div class='ssub'>"+s.s+"</div></div></div>";
+}).join("");}
+function setS(id,st,msg){var el=document.getElementById("s-"+id);if(!el)return;
+  el.className="step "+st;
+  var ic={active:"&#x26A1;",done:"&#x2705;",error:"&#x274C;"};
+  el.querySelector(".sico").innerHTML=ic[st]||"&#x23F3;";
+  if(msg)el.querySelector(".ssub").textContent=msg;}
+async function api(action,params){
+  var r=await fetch("/api/run",{method:"POST",headers:ah(),body:JSON.stringify({action:action,params:params})});
+  if(r.status===402){var d=await r.json();if(d.error==="no_credits")throw new Error("NO_CREDITS");}
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  return r.json();
+}
+function noCredits(){document.getElementById("nob").classList.add("show");
+  document.getElementById("gb").disabled=true;document.getElementById("cc").textContent="0";}
+async function refreshCr(){try{var r=await fetch("/api/auth/me",{headers:ah()});
+  var d=await r.json();document.getElementById("cc").textContent=d.credits;}catch(e){}}
+async function startGen(){
+  var btn=document.getElementById("gb");btn.disabled=true;
+  document.getElementById("nob").classList.remove("show");
+  document.getElementById("apb").classList.remove("show");
+  document.getElementById("rc").classList.remove("show");
+  var mat=document.getElementById("mat").value,ht=parseInt(document.getElementById("ht").value)||80;
+  if(tab===0){
+    var pr=document.getElementById("prompt").value.trim();if(!pr){btn.disabled=false;return;}
+    rSteps(SP);setS("img","active","generating...");
+    try{var r=await api("generate_image",{prompt:pr});if(r.error)throw new Error(r.error);
+      setS("img","done",r.time);document.getElementById("apimg").src=r.image_url;
+      document.getElementById("apb").classList.add("show");
+      apUrl=r.image_url;pp={mat:mat,ht:ht};refreshCr();btn.disabled=false;
+    }catch(e){if(e.message==="NO_CREDITS")noCredits();else setS("img","error",e.message);btn.disabled=false;}
+  }else{
+    var iUrl=null;
+    if(tab===1){iUrl=document.getElementById("iurl").value.trim();}
+    else{if(!window._up){btn.disabled=false;return;}
+      rSteps(SU);setS("dn","active","uploading...");
+      try{var r=await api("prepare_file",{file_path:window._up});if(r.error)throw new Error(r.error);
+        iUrl=r.image_url;setS("dn","done",r.time);}
+      catch(e){setS("dn","error",e.message);btn.disabled=false;return;}}
+    if(!iUrl){btn.disabled=false;return;}
+    if(tab===1)rSteps(SU);
+    await pipeline(iUrl,mat,ht,SU);btn.disabled=false;
+  }
+}
+async function approveImg(){document.getElementById("apb").classList.remove("show");
+  document.getElementById("gb").disabled=true;
+  await pipeline(apUrl,pp.mat,pp.ht,SP.slice(1));
+  document.getElementById("gb").disabled=false;}
+function regenImg(){document.getElementById("apb").classList.remove("show");startGen();}
+async function pipeline(iUrl,mat,ht,ss){
+  var has=function(id){return ss.find(function(s){return s.id===id;});};
+  if(has("dn")){setS("dn","active","denoising...");
+    try{var r=await api("denoise",{image_url:iUrl});if(r.error)throw new Error(r.error);
+      setS("dn","done",r.time);iUrl=r.image_url;}
+    catch(e){setS("dn","error",e.message);return;}}
+  var glb="";
+  if(has("md")){setS("md","active","generating 3D...");
+    try{var r=await api("hunyuan3d",{image_url:iUrl});if(r.error)throw new Error(r.error);
+      setS("md","done",r.time);glb=r.glb_url;refreshCr();}
+    catch(e){if(e.message==="NO_CREDITS")noCredits();else setS("md","error",e.message);return;}}
+  var stl="";
+  if(has("cv")){setS("cv","active","converting...");
+    try{var r=await api("convert",{glb_url:glb});if(r.error)throw new Error(r.error);
+      setS("cv","done",r.time);stl=r.stl_path;}
+    catch(e){setS("cv","error",e.message);return;}}
+  if(has("sc")){setS("sc","active","scaling...");
+    try{var r=await api("scale",{stl_path:stl,height_mm:ht});if(r.error)throw new Error(r.error);
+      setS("sc","done",r.time);stl=r.stl_path;}
+    catch(e){setS("sc","error",e.message);}}
+  var mi={};
+  if(has("an")){setS("an","active","analyzing...");
+    try{var r=await api("analyze",{stl_path:stl});if(r.error)throw new Error(r.error);
+      setS("an","done",r.time);mi=r;}
+    catch(e){setS("an","error",e.message);}}
+  if(has("pr")){setS("pr","active","scoring...");
+    try{var r=await api("printability",{stl_path:stl,material:mat});if(r.error)throw new Error(r.error);
+      setS("pr","done",r.time);showResult(stl,r,mi,mat);}
+    catch(e){setS("pr","error",e.message);}}
+}
+function showResult(stl,pr,mi,mat){
+  lstl=stl;var sc=pr.score||0;
+  var col=sc>=85?"#22c55e":sc>=60?"#f59e0b":"#ef4444";
+  var recs=buildRecs(pr,mi,mat);
+  var rh=recs.map(function(r){return"<div class='ri "+r.t+"'><span class='rico'>"+r.i+"</span><span>"+r.x+"</span></div>";}).join("");
+  var dims=mi.dims_x?(mi.dims_x.toFixed(1)+" x "+mi.dims_y.toFixed(1)+" x "+mi.dims_z.toFixed(1)+" mm"):"--";
+  document.getElementById("rc").className="rcard show";
+  document.getElementById("rcontent").innerHTML=
+    "<div class='scring'><div class='scnum' style='color:"+col+"'>"+sc+"</div>"+
+    "<div class='sclb'>Printability Score</div><div class='scverd'>"+pr.verdict+"</div></div>"+
+    "<div class='dims'>"+
+    "<div class='dr'><span class='dlb'>Dimensions</span><span>"+dims+"</span></div>"+
+    "<div class='dr'><span class='dlb'>Faces</span><span>"+(mi.faces||0).toLocaleString()+"</span></div>"+
+    "<div class='dr'><span class='dlb'>Watertight</span><span>"+(mi.watertight?"Yes":"No")+"</span></div>"+
+    "<div class='dr'><span class='dlb'>Material</span><span>"+mat+"</span></div></div>"+
+    "<div class='recs'><div class='rectit'>Print Recommendations</div>"+rh+"</div>"+
+    "<button class='dlbtn' onclick='dlSTL()'>Download STL</button>";
+}
+function buildRecs(pr,mi,mat){
+  var r=[],sc=pr.score||0,ov=pr.overhang_pct||0;
+  if(sc>=85)r.push({t:"good",i:"OK",x:"Excellent - ready to print with standard settings"});
+  else if(sc>=60)r.push({t:"warn",i:"!",x:"Printable with attention - review recommendations"});
+  else r.push({t:"bad",i:"X",x:"Complex geometry - careful slicer setup required"});
+  if(ov>30)r.push({t:"bad",i:"!",x:"Supports required - "+ov.toFixed(0)+"% overhangs over 45deg. Use tree supports"});
+  else if(ov>10)r.push({t:"warn",i:"!",x:"Some overhangs ("+ov.toFixed(0)+"%) - light supports recommended"});
+  else r.push({t:"good",i:"OK",x:"Minimal overhangs - no supports needed"});
+  if(!mi.watertight)r.push({t:"warn",i:"!",x:"Open edges - slicer will auto-repair or fix in Meshmixer"});
+  else r.push({t:"good",i:"OK",x:"Watertight mesh - optimal for slicing"});
+  var m={PLA:{t:"good",i:"i",x:"PLA: 210C nozzle / 60C bed. Great for beginners"},
+    PETG:{t:"good",i:"i",x:"PETG: 230C / 70C. Stronger than PLA"},
+    ABS:{t:"warn",i:"i",x:"ABS: 240C / 100C. Enclosure strongly recommended"},
+    TPU:{t:"warn",i:"i",x:"TPU: 220C / 60C. Print slowly at 20-30 mm/s"},
+    Resin:{t:"good",i:"i",x:"Resin: Use MSLA/DLP printer for maximum detail"}};
+  if(m[mat])r.push(m[mat]);
+  r.push(sc>=80?{t:"good",i:"i",x:"0.2mm layer height, 15% infill, 2 walls"}:
+    {t:"warn",i:"i",x:"0.15mm layer height, 20% infill, 3 walls"});
+  return r;
+}
+async function dlSTL(){if(!lstl)return;
+  try{var r=await fetch("/api/download",{method:"POST",headers:ah(),body:JSON.stringify({stl_path:lstl})});
+    var b=await r.blob();var a=document.createElement("a");
+    a.href=URL.createObjectURL(b);a.download="model_3d.stl";a.click();}
+  catch(e){alert("Error: "+e.message);}
+}
+checkAuth();
+</script>
+</body>
+</html>
