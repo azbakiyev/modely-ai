@@ -2,13 +2,35 @@ import os, time, uuid
 from pathlib import Path
 from datetime import datetime, timedelta
 from functools import wraps
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, Response
 import psycopg2, psycopg2.extras, bcrypt, jwt, requests as http
 
 app = Flask(__name__, static_folder="static")
 SECRET_KEY = os.environ.get("SECRET_KEY", "modely-dev-secret")
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 FAL_KEY = os.environ.get("FAL_KEY", "")
+RESEND_KEY = os.environ.get("RESEND_API_KEY", "")
+ADMIN_PW = os.environ.get("ADMIN_PASSWORD", "modelyadmin2026")
+APP_URL = os.environ.get("APP_URL", "https://modely-ai-production.up.railway.app")
+
+WELCOME_HTML = """
+<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="font-family:-apple-system,sans-serif;background:#0d1117;color:#e6edf3;margin:0;padding:40px">
+<div style="max-width:520px;margin:0 auto;background:#161b22;border-radius:16px;padding:40px;border:1px solid #30363d">
+  <div style="font-size:32px;font-weight:800;margin-bottom:8px">modely<span style="color:#8b5cf6">.ai</span></div>
+  <h2 style="font-size:22px;margin:0 0 16px">Welcome! You're all set 🎉</h2>
+  <p style="color:#8b949e;line-height:1.6">We've added <strong style="color:#22c55e">3 free credits</strong> to your account to get started.</p>
+  <div style="background:#0d1117;border-radius:12px;padding:24px;margin:24px 0;text-align:center">
+    <div style="font-size:56px;font-weight:800;color:#8b5cf6">3</div>
+    <div style="color:#8b949e;font-size:14px;margin-top:4px">free 3D generations</div>
+  </div>
+  <p style="color:#8b949e;line-height:1.6;font-size:14px">Each generation creates a print-ready STL file from your prompt or photo. Takes about 10 minutes per model.</p>
+  <p style="color:#8b949e;line-height:1.6;font-size:14px;margin-top:12px">You can preview your model in 3D directly in the browser and download the STL for any slicer (Bambu Studio, OrcaSlicer, Cura, etc).</p>
+  <a href="{app_url}" style="display:block;background:linear-gradient(135deg,#8b5cf6,#3b82f6);color:#fff;text-decoration:none;padding:14px;border-radius:10px;text-align:center;font-weight:600;margin-top:28px;font-size:15px">Start Generating &#x2192;</a>
+  <p style="color:#30363d;font-size:12px;text-align:center;margin-top:28px">modely.ai &mdash; AI 3D model generator for 3D printing</p>
+</div>
+</body></html>
+"""
 
 
 def get_db():
@@ -34,6 +56,25 @@ def init_db():
     )""")
     conn.commit()
     conn.close()
+
+
+def send_welcome_email(email):
+    if not RESEND_KEY:
+        return
+    try:
+        http.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {RESEND_KEY}", "Content-Type": "application/json"},
+            json={
+                "from": "modely.ai <onboarding@resend.dev>",
+                "to": [email],
+                "subject": "Welcome to modely.ai — 3 free 3D generations inside!",
+                "html": WELCOME_HTML.format(app_url=APP_URL)
+            },
+            timeout=10
+        )
+    except Exception as e:
+        print(f"Email error: {e}")
 
 
 def require_auth(f):
@@ -70,6 +111,7 @@ def register():
         conn.commit()
         conn.close()
         token = jwt.encode({"user_id": row["id"], "exp": datetime.utcnow() + timedelta(days=30)}, SECRET_KEY, algorithm="HS256")
+        send_welcome_email(email)
         return jsonify({"token": token, "credits": row["credits"], "email": email})
     except psycopg2.errors.UniqueViolation:
         return jsonify({"error": "Email already registered"}), 400
@@ -126,9 +168,7 @@ def run():
     action = d.get("action")
     params = d.get("params", {})
     t0 = time.time()
-
-    def elapsed():
-        return f"{time.time()-t0:.1f}s"
+    def elapsed(): return f"{time.time()-t0:.1f}s"
 
     if action in {"generate_image", "hunyuan3d"}:
         conn = get_db()
@@ -149,6 +189,8 @@ def run():
             url = (res.get("images") or [{}])[0].get("url", "")
             conn = get_db(); c = conn.cursor()
             c.execute("UPDATE users SET credits=credits-1 WHERE id=%s", (request.user_id,))
+            c.execute("INSERT INTO generations (user_id,prompt,status) VALUES (%s,%s,'image')",
+                      (request.user_id, params.get("prompt", "")[:500]))
             conn.commit(); conn.close()
             return jsonify({"image_url": url, "time": elapsed()})
 
@@ -170,6 +212,8 @@ def run():
             glb_url = res.get("model_glb", {}).get("url", "")
             conn = get_db(); c = conn.cursor()
             c.execute("UPDATE users SET credits=credits-1 WHERE id=%s", (request.user_id,))
+            c.execute("INSERT INTO generations (user_id,prompt,status) VALUES (%s,%s,'3d')",
+                      (request.user_id, params.get("image_url", "")[:500]))
             conn.commit(); conn.close()
             return jsonify({"glb_url": glb_url, "time": elapsed()})
 
@@ -234,6 +278,75 @@ def download():
         return jsonify({"error": "File not found"}), 404
     return send_file(p, mimetype="application/octet-stream",
                      as_attachment=True, download_name="model_3d.stl")
+
+
+@app.route("/admin")
+def admin_page():
+    pw = request.args.get("pw", "")
+    if pw != ADMIN_PW:
+        return Response("Access denied. Add ?pw=YOUR_PASSWORD", 401)
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) as cnt FROM users")
+        total_users = c.fetchone()["cnt"]
+        c.execute("SELECT COUNT(*) as cnt FROM users WHERE created_at > NOW() - INTERVAL '24 hours'")
+        new_today = c.fetchone()["cnt"]
+        c.execute("SELECT COUNT(*) as cnt FROM generations")
+        total_gens = c.fetchone()["cnt"]
+        c.execute("SELECT COUNT(*) as cnt FROM generations WHERE created_at > NOW() - INTERVAL '24 hours'")
+        gens_today = c.fetchone()["cnt"]
+        c.execute("SELECT COALESCE(SUM(credits),0) as s FROM users")
+        total_credits = c.fetchone()["s"]
+        c.execute("""
+            SELECT u.email, u.credits, u.created_at,
+                COUNT(g.id) as gen_count
+            FROM users u
+            LEFT JOIN generations g ON g.user_id = u.id
+            GROUP BY u.id, u.email, u.credits, u.created_at
+            ORDER BY u.created_at DESC LIMIT 200""")
+        users = c.fetchall()
+        conn.close()
+    except Exception as e:
+        return f"DB Error: {e}", 500
+
+    rows = "".join([
+        f'<tr><td>{u["email"]}</td><td style="color:#8b5cf6;font-weight:600">{u["credits"]}</td>'
+        f'<td>{u["gen_count"]}</td><td style="color:#8b949e">{str(u["created_at"])[:16]}</td></tr>'
+        for u in users
+    ])
+
+    return f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>modely.ai admin</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#e6edf3;padding:28px;min-height:100vh}}
+h1{{font-size:22px;font-weight:800;margin-bottom:24px}}
+h1 em{{color:#8b5cf6;font-style:normal}}
+.stats{{display:flex;gap:14px;margin-bottom:28px;flex-wrap:wrap}}
+.stat{{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px 24px;min-width:110px}}
+.sn{{font-size:34px;font-weight:800;color:#8b5cf6;line-height:1}}
+.sl{{font-size:11px;color:#8b949e;margin-top:5px;text-transform:uppercase;letter-spacing:.05em}}
+table{{width:100%;border-collapse:collapse;background:#161b22;border-radius:12px;overflow:hidden;border:1px solid #30363d}}
+th{{background:#21262d;padding:11px 16px;text-align:left;font-size:11px;color:#8b949e;text-transform:uppercase;letter-spacing:.06em}}
+td{{padding:10px 16px;border-top:1px solid #21262d;font-size:13px}}
+tr:hover td{{background:#1c2128}}
+.badge{{background:rgba(139,92,246,.15);color:#8b5cf6;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:600}}
+</style></head><body>
+<h1>modely<em>.ai</em> &mdash; Admin</h1>
+<div class="stats">
+  <div class="stat"><div class="sn">{total_users}</div><div class="sl">Total Users</div></div>
+  <div class="stat"><div class="sn">{new_today}</div><div class="sl">New Today</div></div>
+  <div class="stat"><div class="sn">{total_gens}</div><div class="sl">Total Gens</div></div>
+  <div class="stat"><div class="sn">{gens_today}</div><div class="sl">Gens Today</div></div>
+  <div class="stat"><div class="sn">{total_credits}</div><div class="sl">Credits Left</div></div>
+</div>
+<table>
+<thead><tr><th>Email</th><th>Credits</th><th>Generations</th><th>Joined</th></tr></thead>
+<tbody>{rows}</tbody>
+</table>
+</body></html>"""
 
 
 @app.route("/")
