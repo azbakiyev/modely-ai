@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>modely.ai</title>
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--purple:#8b5cf6;--blue:#3b82f6;--green:#22c55e;--red:#ef4444;--text:#e6edf3;--muted:#8b949e}
@@ -30,9 +31,10 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .hl h1{font-size:21px;font-weight:700}
 .hl h1 em{color:var(--purple);font-style:normal}
 .hl p{font-size:12px;color:var(--muted);margin-top:1px}
-.hr{display:flex;align-items:center;gap:12px}
+.hr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .cred{background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);border-radius:20px;padding:5px 14px;font-size:13px;font-weight:600}
-.cred span{color:var(--purple)}.uemail{font-size:12px;color:var(--muted)}
+.cred span{color:var(--purple)}
+.uemail{font-size:12px;color:var(--muted)}
 .lout{background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 11px;border-radius:7px;font-size:12px;cursor:pointer;transition:all .2s}
 .lout:hover{border-color:var(--red);color:var(--red)}
 .layout{display:grid;grid-template-columns:400px 1fr;gap:22px;padding:22px;max-width:1200px;margin:0 auto}
@@ -73,6 +75,9 @@ input[type=file]{display:none}
 .scnum{font-size:60px;font-weight:800;line-height:1}
 .sclb{font-size:12px;color:var(--muted);margin-top:3px}
 .scverd{font-size:15px;font-weight:600;margin-top:5px}
+.viewer-wrap{margin-top:18px}
+.viewer-wrap .rectit{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+model-viewer{width:100%;height:280px;background:#0d1117;border-radius:12px;border:1px solid var(--border);--progress-bar-color:var(--purple)}
 .recs{margin-top:18px}
 .rectit{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:9px}
 .ri{display:flex;gap:9px;padding:9px 11px;border-radius:8px;margin-bottom:6px;font-size:13px;align-items:flex-start}
@@ -109,7 +114,7 @@ input[type=file]{display:none}
     <div class="fg"><label class="lb">Email</label>
       <input type="text" class="inp" id="ae" placeholder="you@example.com" autocomplete="email"></div>
     <div class="fg"><label class="lb">Password</label>
-      <input type="password" class="inp" id="ap" placeholder="Min 6 characters" onkeydown="if(event.key===String.fromCharCode(13))doAuth()"></div>
+      <input type="password" class="inp" id="ap" placeholder="Min 6 characters" onkeydown="if(event.key==='Enter')doAuth()"></div>
     <button class="abtn" id="asub" onclick="doAuth()">Create Account</button>
     <div class="aerr" id="aerr"></div>
   </div>
@@ -165,7 +170,7 @@ input[type=file]{display:none}
       <div><strong>No credits left</strong><br><span style="color:var(--muted)">Purchase credits to continue</span></div>
     </div>
     <div class="apbox" id="apb">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:9px">&#x1F441;&#xFE0F; Preview:</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:9px">&#x1F441;&#xFE0F; Preview — approve or regenerate:</p>
       <img class="apimg" id="apimg" src="" alt="">
       <div class="apbtns" style="margin-top:9px">
         <button class="apbtn" onclick="approveImg()">&#x2705; Looks good</button>
@@ -184,7 +189,7 @@ input[type=file]{display:none}
   </div>
 </div>
 <script>
-var tok=localStorage.getItem("mt"),ati=0,tab=0,apUrl=null,pp=null,lstl=null;
+var tok=localStorage.getItem("mt"),ati=0,tab=0,apUrl=null,pp=null,lstl=null,lastGlbUrl=null;
 function ah(){return{"Content-Type":"application/json","Authorization":"Bearer "+tok};}
 function setAt(i){ati=i;document.querySelectorAll(".atab").forEach(function(b,j){b.classList.toggle("active",j===i);});
   document.getElementById("asub").textContent=i===0?"Create Account":"Sign In";
@@ -223,7 +228,7 @@ async function pickPhoto(inp){
     var r=await fetch("/api/upload",{method:"POST",headers:{Authorization:"Bearer "+tok},body:fd});
     var d=await r.json();if(d.error)throw new Error(d.error);
     window._up=d.saved_path;
-    document.getElementById("fps").innerHTML="<span style='color:var(--green)'>OK: "+f.name+"</span>";
+    document.getElementById("fps").innerHTML="<span style='color:var(--green)'>&#x2705; "+f.name+"</span>";
   }catch(e){document.getElementById("fps").innerHTML="<span style='color:var(--red)'>Error: "+e.message+"</span>";}
 }
 var SP=[{id:"img",n:"Generate Image",s:"Nano Banana 2",ic:"&#x1F3A8;"},
@@ -239,8 +244,7 @@ function rSteps(ss){document.getElementById("steps").innerHTML=ss.map(function(s
 }).join("");}
 function setS(id,st,msg){var el=document.getElementById("s-"+id);if(!el)return;
   el.className="step "+st;
-  var ic={active:"&#x26A1;",done:"&#x2705;",error:"&#x274C;"};
-  el.querySelector(".sico").innerHTML=ic[st]||"&#x23F3;";
+  var ic={active:"&#x26A1;",done:"&#x2705;",error:"&#x274C;"};  el.querySelector(".sico").innerHTML=ic[st]||"&#x23F3;";
   if(msg)el.querySelector(".ssub").textContent=msg;}
 async function api(action,params){
   var r=await fetch("/api/run",{method:"POST",headers:ah(),body:JSON.stringify({action:action,params:params})});
@@ -257,6 +261,7 @@ async function startGen(){
   document.getElementById("nob").classList.remove("show");
   document.getElementById("apb").classList.remove("show");
   document.getElementById("rc").classList.remove("show");
+  lastGlbUrl=null;
   var mat=document.getElementById("mat").value,ht=parseInt(document.getElementById("ht").value)||80;
   if(tab===0){
     var pr=document.getElementById("prompt").value.trim();if(!pr){btn.disabled=false;return;}
@@ -293,7 +298,7 @@ async function pipeline(iUrl,mat,ht,ss){
   var glb="";
   if(has("md")){setS("md","active","generating 3D...");
     try{var r=await api("hunyuan3d",{image_url:iUrl});if(r.error)throw new Error(r.error);
-      setS("md","done",r.time);glb=r.glb_url;refreshCr();}
+      setS("md","done",r.time);glb=r.glb_url;lastGlbUrl=glb;refreshCr();}
     catch(e){if(e.message==="NO_CREDITS")noCredits();else setS("md","error",e.message);return;}}
   var stl="";
   if(has("cv")){setS("cv","active","converting...");
@@ -320,36 +325,43 @@ function showResult(stl,pr,mi,mat){
   var recs=buildRecs(pr,mi,mat);
   var rh=recs.map(function(r){return"<div class='ri "+r.t+"'><span class='rico'>"+r.i+"</span><span>"+r.x+"</span></div>";}).join("");
   var dims=mi.dims_x?(mi.dims_x.toFixed(1)+" x "+mi.dims_y.toFixed(1)+" x "+mi.dims_z.toFixed(1)+" mm"):"--";
+  var viewerHtml="";
+  if(lastGlbUrl){
+    viewerHtml="<div class='viewer-wrap'><div class='rectit'>&#x1F3AE; 3D Preview &mdash; drag to rotate</div>"+
+      "<model-viewer src='"+lastGlbUrl+"' auto-rotate camera-controls shadow-intensity='1' "+
+      "environment-image='neutral' style='width:100%;height:280px;background:#0d1117;border-radius:12px;border:1px solid #30363d'></model-viewer></div>";
+  }
   document.getElementById("rc").className="rcard show";
   document.getElementById("rcontent").innerHTML=
     "<div class='scring'><div class='scnum' style='color:"+col+"'>"+sc+"</div>"+
     "<div class='sclb'>Printability Score</div><div class='scverd'>"+pr.verdict+"</div></div>"+
+    viewerHtml+
     "<div class='dims'>"+
     "<div class='dr'><span class='dlb'>Dimensions</span><span>"+dims+"</span></div>"+
     "<div class='dr'><span class='dlb'>Faces</span><span>"+(mi.faces||0).toLocaleString()+"</span></div>"+
-    "<div class='dr'><span class='dlb'>Watertight</span><span>"+(mi.watertight?"Yes":"No")+"</span></div>"+
+    "<div class='dr'><span class='dlb'>Watertight</span><span>"+(mi.watertight?"&#x2705; Yes":"&#x26A0;&#xFE0F; No")+"</span></div>"+
     "<div class='dr'><span class='dlb'>Material</span><span>"+mat+"</span></div></div>"+
-    "<div class='recs'><div class='rectit'>Print Recommendations</div>"+rh+"</div>"+
-    "<button class='dlbtn' onclick='dlSTL()'>Download STL</button>";
+    "<div class='recs'><div class='rectit'>&#x1F4CB; Print Recommendations</div>"+rh+"</div>"+
+    "<button class='dlbtn' onclick='dlSTL()'>&#x2B07;&#xFE0F; Download STL</button>";
 }
 function buildRecs(pr,mi,mat){
   var r=[],sc=pr.score||0,ov=pr.overhang_pct||0;
-  if(sc>=85)r.push({t:"good",i:"OK",x:"Excellent - ready to print with standard settings"});
-  else if(sc>=60)r.push({t:"warn",i:"!",x:"Printable with attention - review recommendations"});
-  else r.push({t:"bad",i:"X",x:"Complex geometry - careful slicer setup required"});
-  if(ov>30)r.push({t:"bad",i:"!",x:"Supports required - "+ov.toFixed(0)+"% overhangs over 45deg. Use tree supports"});
-  else if(ov>10)r.push({t:"warn",i:"!",x:"Some overhangs ("+ov.toFixed(0)+"%) - light supports recommended"});
-  else r.push({t:"good",i:"OK",x:"Minimal overhangs - no supports needed"});
-  if(!mi.watertight)r.push({t:"warn",i:"!",x:"Open edges - slicer will auto-repair or fix in Meshmixer"});
-  else r.push({t:"good",i:"OK",x:"Watertight mesh - optimal for slicing"});
-  var m={PLA:{t:"good",i:"i",x:"PLA: 210C nozzle / 60C bed. Great for beginners"},
-    PETG:{t:"good",i:"i",x:"PETG: 230C / 70C. Stronger than PLA"},
-    ABS:{t:"warn",i:"i",x:"ABS: 240C / 100C. Enclosure strongly recommended"},
-    TPU:{t:"warn",i:"i",x:"TPU: 220C / 60C. Print slowly at 20-30 mm/s"},
-    Resin:{t:"good",i:"i",x:"Resin: Use MSLA/DLP printer for maximum detail"}};
+  if(sc>=85)r.push({t:"good",i:"&#x1F7E2;",x:"Excellent &#x2014; ready to print with standard settings"});
+  else if(sc>=60)r.push({t:"warn",i:"&#x1F7E1;",x:"Printable with attention &#x2014; review recommendations"});
+  else r.push({t:"bad",i:"&#x1F534;",x:"Complex geometry &#x2014; careful slicer setup required"});
+  if(ov>30)r.push({t:"bad",i:"&#x26A0;&#xFE0F;",x:"Supports required &#x2014; "+ov.toFixed(0)+"% overhangs &gt;45&deg;. Use tree supports"});
+  else if(ov>10)r.push({t:"warn",i:"&#x26A0;&#xFE0F;",x:"Some overhangs ("+ov.toFixed(0)+"%) &#x2014; light supports recommended"});
+  else r.push({t:"good",i:"&#x2705;",x:"Minimal overhangs &#x2014; no supports needed"});
+  if(!mi.watertight)r.push({t:"warn",i:"&#x1F527;",x:"Open edges &#x2014; slicer will auto-repair or fix in Meshmixer"});
+  else r.push({t:"good",i:"&#x2705;",x:"Watertight mesh &#x2014; optimal for slicing"});
+  var m={PLA:{t:"good",i:"&#x1F4A1;",x:"PLA: 210&deg;C nozzle / 60&deg;C bed. Great for beginners"},
+    PETG:{t:"good",i:"&#x1F4A1;",x:"PETG: 230&deg;C / 70&deg;C. Stronger than PLA"},
+    ABS:{t:"warn",i:"&#x1F4A1;",x:"ABS: 240&deg;C / 100&deg;C. Enclosure strongly recommended"},
+    TPU:{t:"warn",i:"&#x1F4A1;",x:"TPU: 220&deg;C / 60&deg;C. Print slowly at 20-30 mm/s"},
+    Resin:{t:"good",i:"&#x1F4A1;",x:"Resin: Use MSLA/DLP printer for maximum detail"}};
   if(m[mat])r.push(m[mat]);
-  r.push(sc>=80?{t:"good",i:"i",x:"0.2mm layer height, 15% infill, 2 walls"}:
-    {t:"warn",i:"i",x:"0.15mm layer height, 20% infill, 3 walls"});
+  r.push(sc>=80?{t:"good",i:"&#x1F4CF;",x:"0.2mm layer height, 15% infill, 2 walls"}:
+    {t:"warn",i:"&#x1F4CF;",x:"0.15mm layer height, 20% infill, 3 walls"});
   return r;
 }
 async function dlSTL(){if(!lstl)return;
